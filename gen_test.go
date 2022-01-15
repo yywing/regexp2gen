@@ -1,6 +1,8 @@
 package regexp2gen
 
 import (
+	"encoding/hex"
+	"fmt"
 	"testing"
 
 	"github.com/dlclark/regexp2"
@@ -31,7 +33,8 @@ func TestReplace(t *testing.T) {
 	s += "[a-z]"
 	// multi
 	s += "test"
-	// Ref, Bol, Eol, Boundary, Nonboundary
+	// setmark, capturemark, ref
+	s += `(a(a))\1`
 
 	re, err := regexp2.Compile(s, regexp2.RE2)
 	require.Nil(t, err)
@@ -42,4 +45,21 @@ func TestReplace(t *testing.T) {
 	result, err := re.MatchString(data)
 	require.Nil(t, err)
 	require.True(t, result)
+}
+
+func TestReplace2(t *testing.T) {
+	// notoneloop
+	s := `^Google\nApple\Z`
+
+	re, err := regexp2.Compile(s, regexp2.Singleline|regexp2.RE2)
+	require.Nil(t, err)
+
+	m, err := re.FindStringMatch("Google\nApple\n")
+	require.Nil(t, err)
+	if m != nil {
+		fmt.Println(hex.Dump([]byte(m.String())))
+	} else {
+		fmt.Println("not match")
+	}
+
 }

@@ -3,51 +3,14 @@ package regexp2gen
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math"
-	"math/rand"
 
 	"github.com/dlclark/regexp2/syntax"
 )
 
 const runeRangeEnd = 0x10ffff
-const printableChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\n\r"
-
-var printableCharsNoNL = printableChars[:len(printableChars)-2]
-
-type state struct {
-	debug bool
-
-	rand *rand.Rand
-
-	limit int
-	// use for .
-	chars []rune
-}
-
-func (s *state) randomRunes(chars []rune, length int) []rune {
-	result := []rune{}
-	for j := 0; j < length; j++ {
-		r := chars[s.rand.Intn(len(chars))]
-		result = append(result, r)
-	}
-	return result
-}
-
-func NewState(debug bool, limit int, chars []rune, seed int64) *state {
-	r := rand.New(rand.NewSource(seed))
-
-	if chars == nil {
-		chars = []rune(printableCharsNoNL)
-	}
-
-	return &state{
-		debug: debug,
-		rand:  r,
-		limit: limit,
-		chars: chars,
-	}
-}
 
 type Generator struct{}
 
@@ -68,7 +31,7 @@ func opcodeSize(op syntax.InstOp) int {
 		return 3
 
 	default:
-		panic(fmt.Errorf("Unexpected op code: %v", op))
+		panic(fmt.Sprintf("Unexpected op code: %v", op))
 	}
 }
 
@@ -85,7 +48,7 @@ func (g *Generator) Generate(s *state, re string) (string, error) {
 	if s.debug {
 		fmt.Println(re)
 	}
-
+	// TODO: 正则模式没有处理
 	tree, err := syntax.Parse(re, syntax.RE2)
 	if err != nil {
 		return "", err
@@ -103,8 +66,9 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 		g.printCode(c)
 	}
 
-	buf := &bytes.Buffer{}
+	buf := NewBuffer()
 	index := 0
+
 	for index < len(c.Codes) {
 		op := syntax.InstOp(c.Codes[index])
 		size := opcodeSize(op)
@@ -196,7 +160,112 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 				buf.WriteRune(j)
 			}
 		case syntax.Multi:
-			fmt.Fprintln(buf, string(c.Strings[c.Codes[index+1]]))
+			for _, r := range c.Strings[c.Codes[index+1]] {
+				buf.WriteRune(r)
+			}
+		case syntax.Ref:
+			refIndex := c.Codes[index+1]
+			groupBuffer, ok := buf.Getmark(refIndex)
+			if !ok {
+				return "", fmt.Errorf("ref get index err: %d", refIndex)
+			}
+			_, err := buf.WriteAll(groupBuffer.Bytes())
+			if err != nil {
+				return "", err
+			}
+
+		/*
+			TODO:
+			input: end sends endure lender
+			\bend\b -> (end)
+			\Bend\B -> s(end)s, l(end)er
+		*/
+		case syntax.Boundary:
+			return "", errors.New(`\b not support yet`)
+		case syntax.Nonboundary:
+			return "", errors.New(`\B not support yet`)
+
+		/*
+			^ Matches the beginning of a line.
+
+			$ Matches the end of a line.
+
+			\A Matches the beginning of the string.
+
+			\z Matches the end of the string.
+
+			\Z Matches the end of the string unless the string ends with a "\n", in which case it matches just before the "\n".
+
+			DOTALL: ^ = \A, $= \Z
+			input: Google\nApple
+			^Google\nApple$   -> Google\nApple
+			\AGoogle\nApple\z -> Google\nApple
+			\AGoogle\nApple\Z -> Google\nApple
+			input: Google\nApple\n
+			^Google\nApple$   -> Google\nApple
+			\AGoogle\nApple\z ->
+			\AGoogle\nApple\Z -> Google\nApple
+			input: Google\nApple\n\n
+			^Google\nApple$   ->
+			\AGoogle\nApple\z ->
+			\AGoogle\nApple\Z ->
+			MULTILINE:
+			^Google\nApple$   -> Google\nApple
+			\AGoogle\nApple\z -> Google\nApple
+			\AGoogle\nApple\Z -> Google\nApple
+			input: Google\nApple\n
+			^Google\nApple$   -> Google\nApple
+			\AGoogle\nApple\z ->
+			\AGoogle\nApple\Z -> Google\nApple
+			input: Google\nApple\n\n
+			^Google\nApple$   -> Google\nApple
+			\AGoogle\nApple\z ->
+			\AGoogle\nApple\Z ->
+		*/
+		case syntax.Bol:
+		case syntax.Eol:
+		case syntax.Beginning:
+		case syntax.Start:
+		case syntax.EndZ:
+		case syntax.End:
+
+		case syntax.Nothing:
+
+		case syntax.Setmark:
+			buf.Setmark()
+		case syntax.Capturemark:
+			refIndex := c.Codes[index+1]
+			// TODO: 这里还有一个参数, 不知道是用来干啥的， unidex？？ 非捕获么？
+			err := buf.Capturemark(refIndex)
+			if err != nil {
+				return "", err
+			}
+		case syntax.Getmark:
+		case syntax.Lazybranch:
+		case syntax.Branchmark:
+		case syntax.Lazybranchmark:
+		case syntax.Nullcount:
+		case syntax.Setcount:
+		case syntax.Branchcount:
+		case syntax.Lazybranchcount:
+		case syntax.Nullmark:
+		case syntax.Setjump:
+		case syntax.Backjump:
+		case syntax.Forejump:
+		case syntax.Testref:
+		case syntax.Goto:
+
+		case syntax.Prune:
+		case syntax.Stop:
+
+		case syntax.ECMABoundary:
+		case syntax.NonECMABoundary:
+
+		case syntax.Mask:
+		case syntax.Rtl:
+		case syntax.Back:
+		case syntax.Back2:
+		case syntax.Ci:
 		default:
 		}
 		index += size
