@@ -6,6 +6,8 @@ const printableChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRST
 
 var printableCharsNoNL = printableChars[:len(printableChars)-2]
 
+var defaultBoundary = ' '
+
 type state struct {
 	debug bool
 
@@ -14,6 +16,8 @@ type state struct {
 	limit int
 	// use for .
 	chars []rune
+
+	boundary rune
 }
 
 func (s *state) randomRunes(chars []rune, length int) []rune {
@@ -33,9 +37,10 @@ func NewState(debug bool, limit int, chars []rune, seed int64) *state {
 	}
 
 	return &state{
-		debug: debug,
-		rand:  r,
-		limit: limit,
-		chars: chars,
+		debug:    debug,
+		rand:     r,
+		limit:    limit,
+		chars:    chars,
+		boundary: defaultBoundary,
 	}
 }

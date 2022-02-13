@@ -43,9 +43,8 @@ func (b *Buffer) Setmark() {
 }
 
 // pop
-func (b *Buffer) Capturemark(index int) error {
+func (b *Buffer) Backmark(capture bool, index int) error {
 	outer := b.Buffer
-	b.marks[index] = outer
 	l := len(b.buffers)
 	b.Buffer = b.buffers[l-1]
 	b.buffers = b.buffers[:l-1]
@@ -53,6 +52,10 @@ func (b *Buffer) Capturemark(index int) error {
 	_, err := b.WriteAll(outer.Bytes())
 	if err != nil {
 		return err
+	}
+
+	if capture {
+		b.marks[index] = outer
 	}
 	return nil
 }

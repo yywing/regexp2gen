@@ -1,8 +1,6 @@
 package regexp2gen
 
 import (
-	"encoding/hex"
-	"fmt"
 	"testing"
 
 	"github.com/dlclark/regexp2"
@@ -40,26 +38,67 @@ func TestReplace(t *testing.T) {
 	require.Nil(t, err)
 
 	g := NewGenerator(s)
-	data, err := g.Generate(NewState(true, 3, nil, 0), s)
+	data, err := g.Generate(NewState(true, 3, nil, 0), s, regexp2.RE2)
 	require.Nil(t, err)
 	result, err := re.MatchString(data)
 	require.Nil(t, err)
 	require.True(t, result)
 }
 
-func TestReplace2(t *testing.T) {
-	// notoneloop
-	s := `^Google\nApple\Z`
+func TestRequire(t *testing.T) {
+	/*
+		000003 *Setjump()
+		000004 *Setmark()
+		000005  Multi-Rtl(String = gg)
+		000007 *Getmark()
+		000008 *Forejump()
+	*/
+	cases := []string{
+		`(?:gg)aa`,
+		`aa(?=gg)`,
+		`(?<=gg)aa`,
+		`(?<a>gg)aa`,
+	}
 
-	re, err := regexp2.Compile(s, regexp2.Singleline|regexp2.RE2)
-	require.Nil(t, err)
+	for _, s := range cases {
+		re, err := regexp2.Compile(s, regexp2.RE2)
+		require.Nil(t, err)
 
-	m, err := re.FindStringMatch("Google\nApple\n")
-	require.Nil(t, err)
-	if m != nil {
-		fmt.Println(hex.Dump([]byte(m.String())))
-	} else {
-		fmt.Println("not match")
+		g := NewGenerator(s)
+		data, err := g.Generate(NewState(true, 3, nil, 0), s, regexp2.RE2)
+		require.Nil(t, err)
+		result, err := re.MatchString(data)
+		require.Nil(t, err)
+		require.True(t, result)
+	}
+
+}
+
+func TestPrevent(t *testing.T) {
+	/*
+		000003 *Setjump()
+		000004 *Lazybranch(Addr = 9)
+		000006  Multi-Rtl(String = gg)
+		000008 *Backjump()
+		000009 *Forejump()
+	*/
+	// TODO: 这个还没有实现
+	t.Skip()
+	cases := []string{
+		`(?!gg)aa`,
+		`(?<!gg)aa`,
+	}
+
+	for _, s := range cases {
+		re, err := regexp2.Compile(s, regexp2.RE2)
+		require.Nil(t, err)
+
+		g := NewGenerator(s)
+		data, err := g.Generate(NewState(true, 3, nil, 0), s, regexp2.RE2)
+		require.Nil(t, err)
+		result, err := re.MatchString(data)
+		require.Nil(t, err)
+		require.True(t, result)
 	}
 
 }

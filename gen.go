@@ -7,10 +7,9 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/dlclark/regexp2"
 	"github.com/dlclark/regexp2/syntax"
 )
-
-const runeRangeEnd = 0x10ffff
 
 type Generator struct{}
 
@@ -44,12 +43,17 @@ func (g *Generator) printCode(c *syntax.Code) {
 	fmt.Println(buf.String())
 }
 
-func (g *Generator) Generate(s *state, re string) (string, error) {
+func (g *Generator) Generate(s *state, re string, op regexp2.RegexOptions) (string, error) {
 	if s.debug {
 		fmt.Println(re)
 	}
-	// TODO: 正则模式没有处理
-	tree, err := syntax.Parse(re, syntax.RE2)
+
+	reg, err := regexp2.Compile(re, op)
+	if err != nil {
+		return "", err
+	}
+
+	tree, err := syntax.Parse(re, syntax.RegexOptions(op))
 	if err != nil {
 		return "", err
 	}
@@ -58,9 +62,25 @@ func (g *Generator) Generate(s *state, re string) (string, error) {
 		return "", err
 	}
 
-	return g.generate(s, c)
+	result, err := g.generate(s, c)
+	if err != nil {
+		return "", err
+	}
+
+	ok, err := reg.MatchString(result)
+	if err != nil {
+		return "", err
+	}
+	if !ok {
+		return "", errors.New("generate string fail")
+	}
+
+	return result, nil
 }
 
+/*
+	TODO： 这里只实现了简单的罗列，没有考虑一些非匹配和匹配之间相互影响的问题
+*/
 func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 	if s.debug {
 		g.printCode(c)
@@ -72,6 +92,8 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 	for index < len(c.Codes) {
 		op := syntax.InstOp(c.Codes[index])
 		size := opcodeSize(op)
+		op &= syntax.Mask
+
 		switch op {
 		case syntax.Onelazy, syntax.Notonelazy, syntax.Setlazy:
 			//{2,4}? -> rep(Rep = 2), lazy(Rep = 2)
@@ -175,15 +197,22 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 			}
 
 		/*
-			TODO:
 			input: end sends endure lender
 			\bend\b -> (end)
 			\Bend\B -> s(end)s, l(end)er
 		*/
 		case syntax.Boundary:
-			return "", errors.New(`\b not support yet`)
+			// TODO: 无脑写
+			buf.WriteRune(s.boundary)
 		case syntax.Nonboundary:
-			return "", errors.New(`\B not support yet`)
+			// TODO: 无脑写
+			buf.WriteRune(s.randomRunes(s.chars, 1)[0])
+		case syntax.ECMABoundary:
+			// TODO: 无脑写
+			buf.WriteRune(s.boundary)
+		case syntax.NonECMABoundary:
+			// TODO: 无脑写
+			buf.WriteRune(s.randomRunes(s.chars, 1)[0])
 
 		/*
 			^ Matches the beginning of a line.
@@ -228,7 +257,6 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 		case syntax.Start:
 		case syntax.EndZ:
 		case syntax.End:
-
 		case syntax.Nothing:
 
 		case syntax.Setmark:
@@ -236,11 +264,25 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 		case syntax.Capturemark:
 			refIndex := c.Codes[index+1]
 			// TODO: 这里还有一个参数, 不知道是用来干啥的， unidex？？ 非捕获么？
-			err := buf.Capturemark(refIndex)
+			err := buf.Backmark(true, refIndex)
 			if err != nil {
 				return "", err
 			}
 		case syntax.Getmark:
+			err := buf.Backmark(false, -1)
+			if err != nil {
+				return "", err
+			}
+
+		case syntax.Setjump:
+		case syntax.Forejump:
+		case syntax.Backjump:
+			/*
+				TODO: 这个地方还没实现。
+				一旦出现这个证明出现了 ?!， 需要生成一个不符合其中正则的内容
+				需要把上面能产生实际内容的字符串生成的 case 都写一个否定逻辑然后在这里使用一下
+			*/
+
 		case syntax.Lazybranch:
 		case syntax.Branchmark:
 		case syntax.Lazybranchmark:
@@ -249,24 +291,13 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 		case syntax.Branchcount:
 		case syntax.Lazybranchcount:
 		case syntax.Nullmark:
-		case syntax.Setjump:
-		case syntax.Backjump:
-		case syntax.Forejump:
 		case syntax.Testref:
 		case syntax.Goto:
 
 		case syntax.Prune:
 		case syntax.Stop:
-
-		case syntax.ECMABoundary:
-		case syntax.NonECMABoundary:
-
-		case syntax.Mask:
-		case syntax.Rtl:
-		case syntax.Back:
-		case syntax.Back2:
-		case syntax.Ci:
 		default:
+			return "", fmt.Errorf("unknown code %d", op)
 		}
 		index += size
 	}
