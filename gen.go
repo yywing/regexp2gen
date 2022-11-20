@@ -309,6 +309,6 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 }
 
 // create a new generator
-func NewGenerator(regex string) *Generator {
+func NewGenerator() *Generator {
 	return &Generator{}
 }

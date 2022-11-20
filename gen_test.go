@@ -37,7 +37,7 @@ func TestReplace(t *testing.T) {
 	re, err := regexp2.Compile(s, regexp2.RE2)
 	require.Nil(t, err)
 
-	g := NewGenerator(s)
+	g := NewGenerator()
 	data, err := g.Generate(NewState(true, 3, nil, 0), s, regexp2.RE2)
 	require.Nil(t, err)
 	result, err := re.MatchString(data)
@@ -64,7 +64,7 @@ func TestRequire(t *testing.T) {
 		re, err := regexp2.Compile(s, regexp2.RE2)
 		require.Nil(t, err)
 
-		g := NewGenerator(s)
+		g := NewGenerator()
 		data, err := g.Generate(NewState(true, 3, nil, 0), s, regexp2.RE2)
 		require.Nil(t, err)
 		result, err := re.MatchString(data)
@@ -93,7 +93,7 @@ func TestPrevent(t *testing.T) {
 		re, err := regexp2.Compile(s, regexp2.RE2)
 		require.Nil(t, err)
 
-		g := NewGenerator(s)
+		g := NewGenerator()
 		data, err := g.Generate(NewState(true, 3, nil, 0), s, regexp2.RE2)
 		require.Nil(t, err)
 		result, err := re.MatchString(data)
