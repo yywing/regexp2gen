@@ -2,7 +2,7 @@ package regexp2gen
 
 import "math/rand"
 
-const printableChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\n\r"
+const printableChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_ \n\r"
 
 var printableCharsNoNL = printableChars[:len(printableChars)-2]
 

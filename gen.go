@@ -152,12 +152,21 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 			}
 		case syntax.Set, syntax.Setrep, syntax.Setloop:
 			charSet := c.Sets[c.Codes[index+1]]
-			// get possible chars
+			// 优先使用输入的字符集
 			possibleChars := []rune{}
 			for j := 0; j < len(s.chars); j++ {
 				c := s.chars[j]
 				if charSet.CharIn(c) {
 					possibleChars = append(possibleChars, c)
+				}
+			}
+			// 尝试寻找一个能满足的匹配项
+			// TODO：因为 charSet 没有提供相应的属性或者方法出来，所以这里愚蠢的遍历一遍尝试找一个
+			if len(possibleChars) == 0 {
+				for _, r := range charSet.String() {
+					if charSet.CharIn(r) {
+						possibleChars = append(possibleChars, r)
+					}
 				}
 			}
 			if len(possibleChars) == 0 {
