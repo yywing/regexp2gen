@@ -89,6 +89,9 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 	buf := NewBuffer()
 	index := 0
 
+	// 记录 set count 的值
+	setCountNum := []int{}
+
 	for index < len(c.Codes) {
 		op := syntax.InstOp(c.Codes[index])
 		size := opcodeSize(op)
@@ -296,8 +299,26 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 		case syntax.Branchmark:
 		case syntax.Lazybranchmark:
 		case syntax.Nullcount:
+			num := c.Codes[index+1]
+			setCountNum = append(setCountNum, num)
 		case syntax.Setcount:
+			num := c.Codes[index+1]
+			setCountNum = append(setCountNum, num)
 		case syntax.Branchcount:
+			if len(setCountNum) == 0 {
+				return "", fmt.Errorf("unknown branch count")
+			}
+			num := setCountNum[len(setCountNum)-1]
+			addr := c.Codes[index+1]
+			limit := c.Codes[index+2]
+			if num == limit {
+				// 完成
+				setCountNum = setCountNum[:len(setCountNum)-1]
+			} else {
+				setCountNum[len(setCountNum)-1] = num + 1
+				// 跳转到 addr
+				size = addr - index
+			}
 		case syntax.Lazybranchcount:
 		case syntax.Nullmark:
 		case syntax.Testref:

@@ -131,3 +131,17 @@ func TestCharSet(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, result)
 }
+
+func TestBranchCount(t *testing.T) {
+	s := `^(a){5}(b){1}(c)?$`
+
+	re, err := regexp2.Compile(s, regexp2.RE2)
+	require.Nil(t, err)
+
+	g := NewGenerator()
+	data, err := g.Generate(NewState(true, 3, nil, 0), s, regexp2.RE2)
+	require.Nil(t, err)
+	result, err := re.MatchString(data)
+	require.Nil(t, err)
+	require.True(t, result)
+}
