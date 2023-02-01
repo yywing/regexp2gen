@@ -82,11 +82,9 @@ func TestPrevent(t *testing.T) {
 		000008 *Backjump()
 		000009 *Forejump()
 	*/
-	// TODO: 这个还没有实现
-	t.Skip()
 	cases := []string{
 		`(?!gg)aa`,
-		`(?<!gg)aa`,
+		// `(?<!gg)aa`,
 	}
 
 	for _, s := range cases {
@@ -140,6 +138,20 @@ func TestCharSet(t *testing.T) {
 
 func TestBranchCount(t *testing.T) {
 	s := `^(a){5}(b){1}(c)?$`
+
+	re, err := regexp2.Compile(s, regexp2.RE2)
+	require.Nil(t, err)
+
+	g := NewGenerator()
+	data, err := g.Generate(NewState(true, 3, nil, 0), s, regexp2.RE2)
+	require.Nil(t, err)
+	result, err := re.MatchString(data)
+	require.Nil(t, err)
+	require.True(t, result)
+}
+
+func TestBranchMark(t *testing.T) {
+	s := `^a(?:[\w/+=])+a(?:[\w/+=])+a$`
 
 	re, err := regexp2.Compile(s, regexp2.RE2)
 	require.Nil(t, err)

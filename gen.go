@@ -283,6 +283,11 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 			if err != nil {
 				return "", err
 			}
+		case syntax.Branchmark:
+			err := buf.Backmark(false, -1)
+			if err != nil {
+				return "", err
+			}
 
 		case syntax.Setjump:
 		case syntax.Forejump:
@@ -294,7 +299,6 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 			*/
 
 		case syntax.Lazybranch:
-		case syntax.Branchmark:
 		case syntax.Lazybranchmark:
 		case syntax.Nullcount:
 			num := c.Codes[index+1]
