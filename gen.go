@@ -79,7 +79,7 @@ func (g *Generator) Generate(s *state, re string, op regexp2.RegexOptions) (stri
 }
 
 /*
-	TODO： 这里只实现了简单的罗列，没有考虑一些非匹配和匹配之间相互影响的问题
+TODO： 这里只实现了简单的罗列，没有考虑一些非匹配和匹配之间相互影响的问题
 */
 func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 	if s.debug {
@@ -293,7 +293,9 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 		case syntax.Nullmark:
 		case syntax.Testref:
 		case syntax.Goto:
-
+			// 跳转到指定的 index
+			newIndex := c.Codes[index+1]
+			size = newIndex - index
 		case syntax.Prune:
 		case syntax.Stop:
 		default:

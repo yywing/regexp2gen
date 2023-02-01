@@ -102,3 +102,17 @@ func TestPrevent(t *testing.T) {
 	}
 
 }
+
+func TestGoto(t *testing.T) {
+	s := "^(3C|C0)$"
+
+	re, err := regexp2.Compile(s, regexp2.RE2)
+	require.Nil(t, err)
+
+	g := NewGenerator()
+	data, err := g.Generate(NewState(true, 3, nil, 0), s, regexp2.RE2)
+	require.Nil(t, err)
+	result, err := re.MatchString(data)
+	require.Nil(t, err)
+	require.True(t, result)
+}
