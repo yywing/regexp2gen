@@ -119,7 +119,7 @@ func TestGoto(t *testing.T) {
 
 func TestCharSet(t *testing.T) {
 	// 测试字符不在 state 给定的范围，能否找到合适的字符
-	s := `^[\x80-\xff]$`
+	s := `^[\x80-\xff][\x00\x03]$`
 
 	re, err := regexp2.Compile(s, regexp2.RE2)
 	require.Nil(t, err)
@@ -130,6 +130,12 @@ func TestCharSet(t *testing.T) {
 	result, err := re.MatchString(data)
 	require.Nil(t, err)
 	require.True(t, result)
+
+	// 测试 recover 是否生效
+	s = `^[\d]$`
+
+	_, err = g.Generate(NewState(true, 3, []rune{}, 0), s, regexp2.RE2)
+	require.NotNil(t, err)
 }
 
 func TestBranchCount(t *testing.T) {

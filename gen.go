@@ -166,15 +166,13 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 			// 尝试寻找一个能满足的匹配项
 			// TODO：因为 charSet 没有提供相应的属性或者方法出来，所以这里愚蠢的遍历一遍尝试找一个
 			if len(possibleChars) == 0 {
-				for _, r := range charSet.String() {
-					if charSet.CharIn(r) {
-						possibleChars = append(possibleChars, r)
-					}
+				r, err := resolveCharSet(charSet)
+				if err != nil {
+					return "", err
 				}
+				possibleChars = append(possibleChars, r)
 			}
-			if len(possibleChars) == 0 {
-				return "", fmt.Errorf("code has no suitable chars: %s", c.OpcodeDescription(index))
-			}
+
 			var length int
 			if size == 2 {
 				// set
