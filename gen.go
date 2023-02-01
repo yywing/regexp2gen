@@ -288,6 +288,8 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 			if err != nil {
 				return "", err
 			}
+		case syntax.Nullmark:
+			buf.Setmark()
 
 		case syntax.Setjump:
 		case syntax.Forejump:
@@ -322,7 +324,6 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 				size = addr - index
 			}
 		case syntax.Lazybranchcount:
-		case syntax.Nullmark:
 		case syntax.Testref:
 		case syntax.Goto:
 			// 跳转到指定的 index

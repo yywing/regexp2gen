@@ -55,6 +55,7 @@ func TestRequire(t *testing.T) {
 	*/
 	cases := []string{
 		`(?:gg)aa`,
+		`(?:gg)*aa`,
 		`aa(?=gg)`,
 		`(?<=gg)aa`,
 		`(?<a>gg)aa`,
