@@ -14,6 +14,10 @@ func resolveCharSet(set *syntax.CharSet) (r rune, err error) {
 			err = errors.New("cat get char set")
 		}
 	}()
+	if set.IsNegated() {
+		return r, errors.New("cat get char set")
+	}
+
 	r = set.SingletonChar()
 	return r, nil
 }
