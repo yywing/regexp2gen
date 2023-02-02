@@ -72,7 +72,6 @@ func TestRequire(t *testing.T) {
 		require.Nil(t, err)
 		require.True(t, result)
 	}
-
 }
 
 func TestPrevent(t *testing.T) {
@@ -153,6 +152,20 @@ func TestBranchCount(t *testing.T) {
 
 func TestBranchMark(t *testing.T) {
 	s := `^a(?:[\w/+=])+a(?:[\w/+=])+a$`
+
+	re, err := regexp2.Compile(s, regexp2.RE2)
+	require.Nil(t, err)
+
+	g := NewGenerator()
+	data, err := g.Generate(NewState(true, 3, nil, 0), s, regexp2.RE2)
+	require.Nil(t, err)
+	result, err := re.MatchString(data)
+	require.Nil(t, err)
+	require.True(t, result)
+}
+
+func TestLazybranchmark(t *testing.T) {
+	s := `^a(?:b)*?aaa(?:b)*?aaa`
 
 	re, err := regexp2.Compile(s, regexp2.RE2)
 	require.Nil(t, err)

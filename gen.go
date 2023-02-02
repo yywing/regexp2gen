@@ -290,6 +290,11 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 			}
 		case syntax.Nullmark:
 			buf.Setmark()
+		case syntax.Lazybranchmark:
+			err := buf.Backmark(false, -1)
+			if err != nil {
+				return "", err
+			}
 
 		case syntax.Setjump:
 		case syntax.Forejump:
@@ -301,7 +306,6 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 			*/
 
 		case syntax.Lazybranch:
-		case syntax.Lazybranchmark:
 		case syntax.Nullcount:
 			num := c.Codes[index+1]
 			setCountNum = append(setCountNum, num)
