@@ -279,10 +279,11 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 				return "", err
 			}
 		case syntax.Getmark:
-			err := buf.Backmark(false, -1)
-			if err != nil {
-				return "", err
-			}
+			// TODO: get mark 没有实现
+			// err := buf.Backmark(false, -1)
+			// if err != nil {
+			// 	return "", err
+			// }
 		case syntax.Branchmark:
 			err := buf.Backmark(false, -1)
 			if err != nil {
@@ -297,13 +298,28 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 			}
 
 		case syntax.Setjump:
-		case syntax.Forejump:
-		case syntax.Backjump:
 			/*
-				TODO: 这个地方还没实现。
+				TODO: 这个地方还没实现否定逻辑， 目前只是简单的跳过 jump 了
 				一旦出现这个证明出现了 ?!， 需要生成一个不符合其中正则的内容
 				需要把上面能产生实际内容的字符串生成的 case 都写一个否定逻辑然后在这里使用一下
 			*/
+			inner := index + 1
+			back := false
+			for inner < len(c.Codes) {
+				innerOp := syntax.InstOp(c.Codes[inner])
+				innerSize := opcodeSize(innerOp)
+				if innerOp == syntax.Backjump {
+					back = true
+				} else if innerOp == syntax.Forejump {
+					break
+				}
+				inner += innerSize
+			}
+			if back {
+				size = inner - index
+			}
+		case syntax.Forejump:
+		case syntax.Backjump:
 
 		case syntax.Lazybranch:
 		case syntax.Nullcount:
@@ -312,14 +328,14 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 		case syntax.Setcount:
 			num := c.Codes[index+1]
 			setCountNum = append(setCountNum, num)
-		case syntax.Branchcount:
+		case syntax.Branchcount, syntax.Lazybranchcount:
 			if len(setCountNum) == 0 {
 				return "", fmt.Errorf("unknown branch count")
 			}
 			num := setCountNum[len(setCountNum)-1]
 			addr := c.Codes[index+1]
 			limit := c.Codes[index+2]
-			if num == limit {
+			if num >= 0 && (limit == math.MaxInt32 || num == limit) {
 				// 完成
 				setCountNum = setCountNum[:len(setCountNum)-1]
 			} else {
@@ -327,7 +343,7 @@ func (g *Generator) generate(s *state, c *syntax.Code) (string, error) {
 				// 跳转到 addr
 				size = addr - index
 			}
-		case syntax.Lazybranchcount:
+
 		case syntax.Testref:
 		case syntax.Goto:
 			// 跳转到指定的 index
